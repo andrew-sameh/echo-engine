@@ -3,26 +3,28 @@ package server
 import (
 	"net/http"
 
-	"fmt"
-	"log"
-	"time"
-
+	"github.com/brpaz/echozap"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-
-	"nhooyr.io/websocket"
+	"go.uber.org/zap"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
 	e := echo.New()
-	e.Use(middleware.Logger())
+	zapLogger, _ := zap.NewProduction()
+	e.Use(middleware.RequestID())
+	// e.Use(middleware.Timeout())
+
+	// e.Use(middleware.Logger())
+	e.Use(echozap.ZapLogger(zapLogger))
+
 	e.Use(middleware.Recover())
 
 	e.GET("/", s.HelloWorldHandler)
 
 	e.GET("/health", s.healthHandler)
 
-	e.GET("/websocket", s.websocketHandler)
+	e.GET("/users", s.ListUsersHandler)
 
 	return e
 }
@@ -35,34 +37,16 @@ func (s *Server) HelloWorldHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (s *Server) healthHandler(c echo.Context) error {
-	return c.JSON(http.StatusOK, s.db.Health())
+func (s *Server) ListUsersHandler(c echo.Context) error {
+	queries := s.db.Queries()
+	users, err := queries.GetAllUsers(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, users)
 }
 
-func (s *Server) websocketHandler(c echo.Context) error {
-	w := c.Response().Writer
-	r := c.Request()
-	socket, err := websocket.Accept(w, r, nil)
-
-	if err != nil {
-		log.Printf("could not open websocket: %v", err)
-		_, _ = w.Write([]byte("could not open websocket"))
-		w.WriteHeader(http.StatusInternalServerError)
-		return nil
-	}
-
-	defer socket.Close(websocket.StatusGoingAway, "server closing websocket")
-
-	ctx := r.Context()
-	socketCtx := socket.CloseRead(ctx)
-
-	for {
-		payload := fmt.Sprintf("server timestamp: %d", time.Now().UnixNano())
-		err := socket.Write(socketCtx, websocket.MessageText, []byte(payload))
-		if err != nil {
-			break
-		}
-		time.Sleep(time.Second * 2)
-	}
-	return nil
+func (s *Server) healthHandler(c echo.Context) error {
+	return c.JSON(http.StatusOK, s.db.Health())
 }

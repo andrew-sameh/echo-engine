@@ -2,15 +2,39 @@ version: '3.8'
 
 services:
   psql:
-    image: postgres:latest
+    # image: postgres:latest
+    image: bitnami/postgresql
+    # container_name: db
     environment:
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRESQL_DATABASE: ${DB_DATABASE}
+      POSTGRESQL_USERNAME: ${DB_USERNAME}
+      POSTGRESQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${DB_PORT}:5432"
+    expose:
+      - ${DB_PORT}
     volumes:
       - psql_volume:/var/lib/postgresql/data
+    networks:
+      - go_network
+
+  redis:
+    image: redis:alpine
+    # container_name: cache
+    ports:
+      - "6379:6379"
+    expose:
+      - 6379
+    volumes:
+      - redis_data:/data
+    networks:
+      - go_network
+
 
 volumes:
   psql_volume:
+  redis_data:
+
+networks:
+  go_network:
+    driver: bridge

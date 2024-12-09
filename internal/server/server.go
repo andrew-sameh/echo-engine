@@ -7,15 +7,14 @@ import (
 	"strconv"
 	"time"
 
+	db "github.com/andrew-sameh/echo-engine/init"
 	_ "github.com/joho/godotenv/autoload"
-
-	"EchoEngine/internal/database"
 )
 
 type Server struct {
 	port int
 
-	db database.Service
+	db db.DBService
 }
 
 func NewServer() *http.Server {
@@ -23,7 +22,7 @@ func NewServer() *http.Server {
 	NewServer := &Server{
 		port: port,
 
-		db: database.New(),
+		db: db.New(),
 	}
 
 	// Declare Server config

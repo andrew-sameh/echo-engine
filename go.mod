@@ -1,12 +1,13 @@
-module EchoEngine
+module github.com/andrew-sameh/echo-engine
 
-go 1.22.3
+go 1.23.4
 
 require (
+	github.com/brpaz/echozap v1.1.3
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.12.0
-	nhooyr.io/websocket v1.8.17
+	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -19,6 +20,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/sync v0.9.0 // indirect

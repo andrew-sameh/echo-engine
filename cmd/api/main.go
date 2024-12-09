@@ -1,8 +1,9 @@
 package main
 
 import (
-	"EchoEngine/internal/server"
 	"fmt"
+
+	"github.com/andrew-sameh/echo-engine/internal/server"
 )
 
 func main() {

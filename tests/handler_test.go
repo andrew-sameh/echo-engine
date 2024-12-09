@@ -1,13 +1,14 @@
 package tests
 
 import (
-	"EchoEngine/internal/server"
 	"encoding/json"
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/andrew-sameh/echo-engine/internal/server"
+	"github.com/labstack/echo/v4"
 )
 
 func TestHandler(t *testing.T) {
