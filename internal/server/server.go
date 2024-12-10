@@ -1,38 +1,26 @@
 package server
 
 import (
-	"fmt"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
-
-	db "github.com/andrew-sameh/echo-engine/init"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/andrew-sameh/echo-engine/internal/config"
+	db "github.com/andrew-sameh/echo-engine/internal/database"
+	"github.com/labstack/echo/v4"
 )
 
 type Server struct {
-	port int
+	Echo   *echo.Echo
+	Config *config.Config
 
-	db db.DBService
+	DB db.DBService
 }
 
-func NewServer() *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	NewServer := &Server{
-		port: port,
-
-		db: db.New(),
+func NewServer(cfg *config.Config) *Server {
+	return &Server{
+		Config: cfg,
+		Echo:   echo.New(),
+		DB:     db.NewConnection(),
 	}
+}
 
-	// Declare Server config
-	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
-	}
-
-	return server
+func (server *Server) Start(addr string) error {
+	return server.Echo.Start(":" + addr)
 }

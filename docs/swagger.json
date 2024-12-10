@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "This is a sample server Petstore server.",
+        "description": "This is an Echo API Server template.",
         "title": "Echo Engine API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
@@ -15,7 +15,6 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
         "/": {
@@ -28,7 +27,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "HelloWorld"
+                    "Generic"
                 ],
                 "summary": "Hello World",
                 "responses": {
@@ -54,7 +53,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "Generic"
                 ],
                 "summary": "Health check",
                 "responses": {
@@ -80,7 +79,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Generic"
                 ],
                 "summary": "List users",
                 "responses": {

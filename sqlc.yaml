@@ -1,13 +1,13 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    queries: "sql/queries"
-    schema: "sql/migrations"
+    queries: "internal/database/queries"
+    schema: "internal/database/migrations"
     gen:
       go:
         package: "database"
         sql_package: "pgx/v5"
-        out: "sql/database"
+        out: "internal/database/db"
 # servers: []
 # overrides:
     # go: null

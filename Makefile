@@ -1,12 +1,11 @@
 # Simple Makefile for a Go project
+ARTIFACT_NAME := echo-engine 
 
 # Build the application
 all: build
 
 build:
 	@echo "Building..."
-	
-	
 	@go build -o main cmd/api/main.go
 
 # Run the application
@@ -50,6 +49,17 @@ sqlc:
 test:
 	@echo "Testing..."
 	@go test ./tests -v
+
+go-test:
+	@go test -v $(shell go list ./... | grep -v /test/)
+
+go-test-with-cover:
+	@go test -coverprofile cover.out -v $(shell go list ./... | grep -v /test/)
+	@go tool cover -html=cover.out
+
+generate-mocks:
+	@mockery --all --with-expecter --keeptree
+
 
 # Clean the binary
 clean:

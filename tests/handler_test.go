@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/andrew-sameh/echo-engine/internal/server"
+	"github.com/andrew-sameh/echo-engine/internal/server/handlers"
 	"github.com/labstack/echo/v4"
 )
 
@@ -17,8 +18,9 @@ func TestHandler(t *testing.T) {
 	resp := httptest.NewRecorder()
 	c := e.NewContext(req, resp)
 	s := &server.Server{}
+	handlerFunc := handlers.NewGenericHandler(s).HelloWorldHandler(c)
 	// Assertions
-	if err := s.HelloWorldHandler(c); err != nil {
+	if err := handlerFunc; err != nil {
 		t.Errorf("handler() error = %v", err)
 		return
 	}

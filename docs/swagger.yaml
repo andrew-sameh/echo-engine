@@ -1,11 +1,10 @@
 basePath: /api/v1
-host: localhost:8080
 info:
   contact:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: This is a sample server Petstore server.
+  description: This is an Echo API Server template.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -29,7 +28,7 @@ paths:
             type: object
       summary: Hello World
       tags:
-      - HelloWorld
+      - Generic
   /health:
     get:
       consumes:
@@ -46,7 +45,7 @@ paths:
             type: object
       summary: Health check
       tags:
-      - health
+      - Generic
   /users:
     get:
       consumes:
@@ -70,5 +69,5 @@ paths:
           schema: {}
       summary: List users
       tags:
-      - users
+      - Generic
 swagger: "2.0"

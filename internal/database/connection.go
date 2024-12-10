@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	sqlc "github.com/andrew-sameh/echo-engine/sql/database"
+	sqlc "github.com/andrew-sameh/echo-engine/internal/database/db"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	// _ "github.com/jackc/pgx/v5/stdlib"
@@ -27,6 +27,8 @@ type DBService interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close()
+
+	// Queries returns the sqlc.Queries instance.
 	Queries() *sqlc.Queries
 }
 
@@ -46,7 +48,7 @@ var (
 	pgOnce     sync.Once
 )
 
-func New() DBService {
+func NewConnection() DBService {
 	// Reuse Connection
 	// if dbInstance != nil {
 	// 	return dbInstance
