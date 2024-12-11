@@ -7,15 +7,16 @@ import (
 	// "database/sql"
 	"fmt"
 	"log"
-	"os"
+
+	// "os"
 	"strconv"
 	"time"
 
+	"github.com/andrew-sameh/echo-engine/internal/config"
 	sqlc "github.com/andrew-sameh/echo-engine/internal/database/db"
 	"github.com/jackc/pgx/v5/pgxpool"
-
 	// _ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/joho/godotenv/autoload"
+	// _ "github.com/joho/godotenv/autoload"
 )
 
 // Service represents a service that interacts with a database.
@@ -38,23 +39,24 @@ type service struct {
 }
 
 var (
-	database   = os.Getenv("DB_DATABASE")
-	password   = os.Getenv("DB_PASSWORD")
-	username   = os.Getenv("DB_USERNAME")
-	port       = os.Getenv("DB_PORT")
-	host       = os.Getenv("DB_HOST")
-	schema     = os.Getenv("DB_SCHEMA")
+	// database   = os.Getenv("DB_DATABASE")
+	// password   = os.Getenv("DB_PASSWORD")
+	// username   = os.Getenv("DB_USERNAME")
+	// port       = os.Getenv("DB_PORT")
+	// host       = os.Getenv("DB_HOST")
+	// schema     = os.Getenv("DB_SCHEMA")
 	dbInstance *service
 	pgOnce     sync.Once
 )
 
-func NewConnection() DBService {
+func NewConnection(cfg *config.Config) DBService {
 	// Reuse Connection
 	// if dbInstance != nil {
 	// 	return dbInstance
 	// }
 	pgOnce.Do(func() {
-		connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s", username, password, host, port, database, schema)
+		dbCfg := cfg.DB
+		connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s", dbCfg.User, dbCfg.Password, dbCfg.Host, dbCfg.Port, dbCfg.Name, dbCfg.Schema)
 		// db, err := sql.Open("pgx", connStr)
 		pool, err := pgxpool.New(context.Background(), connStr)
 		if err != nil {
@@ -128,6 +130,6 @@ func (s *service) Health() map[string]string {
 // If the connection is successfully closed, it returns nil.
 // If an error occurs while closing the connection, it returns the error.
 func (s *service) Close() {
-	log.Printf("Disconnected from database: %s", database)
+	log.Printf("Disconnected from database")
 	s.Pool.Close()
 }

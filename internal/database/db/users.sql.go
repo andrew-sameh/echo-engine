@@ -14,28 +14,40 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users
 (
+    first_name,
+    last_name,
     username,
     email,
+    role,
     password_hash,
-    created_at
+    created_at,
+    updated_at
 ) VALUES (
-    $1, $2, $3, $4
-) RETURNING id, username, email, password_hash, created_at
+    $1, $2, $3, $4, $5, $6, $7, $8
+) RETURNING id, username, email, password_hash, created_at, first_name, last_name, role, updated_at, deleted_at, is_superuser
 `
 
 type CreateUserParams struct {
+	FirstName    string
+	LastName     string
 	Username     string
 	Email        string
+	Role         UserRole
 	PasswordHash string
 	CreatedAt    pgtype.Timestamp
+	UpdatedAt    pgtype.Timestamp
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
+		arg.FirstName,
+		arg.LastName,
 		arg.Username,
 		arg.Email,
+		arg.Role,
 		arg.PasswordHash,
 		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
 	var i User
 	err := row.Scan(
@@ -44,12 +56,18 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Email,
 		&i.PasswordHash,
 		&i.CreatedAt,
+		&i.FirstName,
+		&i.LastName,
+		&i.Role,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.IsSuperuser,
 	)
 	return i, err
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, username, email, password_hash, created_at FROM users
+SELECT id, username, email, password_hash, created_at, first_name, last_name, role, updated_at, deleted_at, is_superuser FROM users
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -67,6 +85,12 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 			&i.Email,
 			&i.PasswordHash,
 			&i.CreatedAt,
+			&i.FirstName,
+			&i.LastName,
+			&i.Role,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsSuperuser,
 		); err != nil {
 			return nil, err
 		}
@@ -78,8 +102,31 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, username, email, password_hash, created_at, first_name, last_name, role, updated_at, deleted_at, is_superuser FROM users WHERE email = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.FirstName,
+		&i.LastName,
+		&i.Role,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.IsSuperuser,
+	)
+	return i, err
+}
+
 const getUserById = `-- name: GetUserById :one
-SELECT id, username, email, password_hash, created_at FROM users WHERE id = $1 LIMIT 1
+SELECT id, username, email, password_hash, created_at, first_name, last_name, role, updated_at, deleted_at, is_superuser FROM users WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id int64) (User, error) {
@@ -91,16 +138,22 @@ func (q *Queries) GetUserById(ctx context.Context, id int64) (User, error) {
 		&i.Email,
 		&i.PasswordHash,
 		&i.CreatedAt,
+		&i.FirstName,
+		&i.LastName,
+		&i.Role,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.IsSuperuser,
 	)
 	return i, err
 }
 
-const getUserByName = `-- name: GetUserByName :one
-SELECT id, username, email, password_hash, created_at FROM users WHERE username = $1 LIMIT 1
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, username, email, password_hash, created_at, first_name, last_name, role, updated_at, deleted_at, is_superuser FROM users WHERE username = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByName(ctx context.Context, username string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByName, username)
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByUsername, username)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -108,6 +161,12 @@ func (q *Queries) GetUserByName(ctx context.Context, username string) (User, err
 		&i.Email,
 		&i.PasswordHash,
 		&i.CreatedAt,
+		&i.FirstName,
+		&i.LastName,
+		&i.Role,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.IsSuperuser,
 	)
 	return i, err
 }

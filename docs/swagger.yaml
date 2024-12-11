@@ -1,14 +1,85 @@
 basePath: /api/v1
+definitions:
+  requests.LoginRequest:
+    properties:
+      email:
+        example: john.doe@example.com
+        type: string
+      password:
+        example: "11111111"
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  requests.RefreshRequest:
+    properties:
+      token:
+        example: refresh_token
+        type: string
+    required:
+    - token
+    type: object
+  requests.RegisterRequest:
+    properties:
+      email:
+        example: john.doe@example.com
+        type: string
+      first_name:
+        example: John
+        type: string
+      last_name:
+        example: Doe
+        type: string
+      password:
+        example: "11111111"
+        type: string
+      role:
+        example: admin
+        type: string
+      username:
+        example: johndoe
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - role
+    - username
+    type: object
+  responses.Data:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  responses.Error:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+    type: object
+  responses.LoginResponse:
+    properties:
+      accessToken:
+        type: string
+      exp:
+        type: integer
+      refreshToken:
+        type: string
+    type: object
 info:
   contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
+    email: g.andrewsameh@gmail.com
+    name: Andrew Sameh
+    url: https://andrewsam.xyz
   description: This is an Echo API Server template.
   license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
+    name: MIT
+    url: https://opensource.org/license/mit
   title: Echo Engine API
   version: "1.0"
 paths:
@@ -29,6 +100,87 @@ paths:
       summary: Hello World
       tags:
       - Generic
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Perform user login
+      operationId: user-login
+      parameters:
+      - description: User's credentials
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/requests.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.LoginResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.Error'
+      summary: Authenticate a user
+      tags:
+      - Authentication
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Perform refresh access token
+      operationId: user-refresh
+      parameters:
+      - description: Refresh token
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/requests.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.LoginResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.Error'
+      summary: Refresh access token
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: New user registration
+      operationId: user-register
+      parameters:
+      - description: User's email, user's password
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/requests.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/responses.Data'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.Error'
+      summary: Register
+      tags:
+      - Authentication
   /health:
     get:
       consumes:
@@ -46,6 +198,28 @@ paths:
       summary: Health check
       tags:
       - Generic
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: get my user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get my user
+      tags:
+      - User
   /users:
     get:
       consumes:
@@ -67,7 +241,14 @@ paths:
         "500":
           description: Internal Server Error
           schema: {}
+      security:
+      - ApiKeyAuth: []
       summary: List users
       tags:
-      - Generic
+      - User
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

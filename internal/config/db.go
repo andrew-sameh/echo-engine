@@ -9,15 +9,16 @@ type DBConfig struct {
 	Name     string
 	Host     string
 	Port     string
+	Schema   string
 }
 
 func LoadDBConfig() DBConfig {
 	return DBConfig{
-		User:     os.Getenv("DB_USER"),
+		User:     os.Getenv("DB_USERNAME"),
 		Password: os.Getenv("DB_PASSWORD"),
-		Driver:   os.Getenv("DB_DRIVER"),
 		Name:     os.Getenv("DB_NAME"),
 		Host:     os.Getenv("DB_HOST"),
 		Port:     os.Getenv("DB_PORT"),
+		Schema:   os.Getenv("DB_SCHEMA"),
 	}
 }

@@ -17,7 +17,7 @@ func NewServer(cfg *config.Config) *Server {
 	return &Server{
 		Config: cfg,
 		Echo:   echo.New(),
-		DB:     db.NewConnection(),
+		DB:     db.NewConnection(cfg),
 	}
 }
 
