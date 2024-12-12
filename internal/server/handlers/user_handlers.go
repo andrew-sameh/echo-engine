@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/andrew-sameh/echo-engine/internal/responses"
 	s "github.com/andrew-sameh/echo-engine/internal/server"
 	"github.com/andrew-sameh/echo-engine/internal/services/token"
 	"github.com/golang-jwt/jwt/v5"
@@ -37,10 +38,18 @@ func (g *UserHandler) ListUsersHandler(c echo.Context) error {
 	queries := g.server.DB.Queries()
 	users, err := queries.GetAllUsers(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		res := responses.Response{
+			Code:    http.StatusInternalServerError,
+			Message: err,
+		}
+		return res.JSON(c)
 	}
 
-	return c.JSON(http.StatusOK, users)
+	res := responses.Response{
+		Code: http.StatusOK,
+		Data: users,
+	}
+	return res.JSON(c)
 }
 
 // Get My User
@@ -62,8 +71,17 @@ func (g *UserHandler) GetMyUserHandler(c echo.Context) error {
 	queries := g.server.DB.Queries()
 	user, err := queries.GetUserById(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		res := responses.Response{
+			Code:    http.StatusInternalServerError,
+			Message: err,
+		}
+		return res.JSON(c)
 	}
 
-	return c.JSON(http.StatusOK, user)
+	res := responses.Response{
+		Code:   http.StatusOK,
+		Pretty: true,
+		Data:   user,
+	}
+	return res.JSON(c)
 }

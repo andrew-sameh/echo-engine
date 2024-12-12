@@ -10,6 +10,7 @@ import (
 	s "github.com/andrew-sameh/echo-engine/internal/server"
 	tokenservice "github.com/andrew-sameh/echo-engine/internal/services/token"
 	"github.com/andrew-sameh/echo-engine/internal/utils"
+	"github.com/andrew-sameh/echo-engine/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 
@@ -46,14 +47,33 @@ func (authHandler *AuthHandler) Login(c echo.Context) error {
 		return err
 	}
 
-	if err := loginRequest.Validate(); err != nil {
-		return responses.ErrorResponse(c, http.StatusBadRequest, "Required fields are empty or not valid")
+	if err := authHandler.server.Echo.Validator.Validate(loginRequest); err != nil {
+		logger.Log().Error("error validating request: %v", err, c.Response().Header().Get(echo.HeaderXRequestID))
+		res := responses.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Required fields are empty or not valid",
+		}
+		return res.JSON(c)
 	}
+
+	// if err := loginRequest.Validate(); err != nil {
+	// 	// return responses.ErrorResponse(c, http.StatusBadRequest, "Required fields are empty or not valid")
+	// 	res := responses.Response{
+	// 		Code:    http.StatusBadRequest,
+	// 		Message: "Required fields are empty or not valid",
+	// 	}
+	// 	return res.JSON(c)
+	// }
 
 	user, err := queries.GetUserByEmail(c.Request().Context(), loginRequest.Email)
 
 	if err != nil || (bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(loginRequest.Password)) != nil) {
-		return responses.ErrorResponse(c, http.StatusUnauthorized, "Invalid credentials")
+		// return responses.ErrorResponse(c, http.StatusUnauthorized, "Invalid credentials")
+		res := responses.Response{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid credentials",
+		}
+		return res.JSON(c)
 	}
 
 	tokenService := tokenservice.NewTokenService(authHandler.server.Config)
@@ -65,9 +85,15 @@ func (authHandler *AuthHandler) Login(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	res := responses.NewLoginResponse(accessToken, refreshToken, exp)
+	resBody := responses.NewLoginResponse(accessToken, refreshToken, exp)
 
-	return responses.Response(c, http.StatusOK, res)
+	res := responses.Response{
+		Code: http.StatusOK,
+		Data: resBody,
+	}
+
+	return res.JSON(c)
+	// return responses.Response(c, http.StatusOK, res)
 }
 
 // RefreshToken
@@ -98,19 +124,34 @@ func (authHandler *AuthHandler) RefreshToken(c echo.Context) error {
 	})
 
 	if err != nil {
-		return responses.ErrorResponse(c, http.StatusUnauthorized, err.Error())
+		// return responses.ErrorResponse(c, http.StatusUnauthorized, err.Error())
+		res := responses.Response{
+			Code:    http.StatusUnauthorized,
+			Message: err.Error(),
+		}
+		return res.JSON(c)
 	}
 
 	claims, ok := token.Claims.(jwtGo.MapClaims)
 	if !ok && !token.Valid {
-		return responses.ErrorResponse(c, http.StatusUnauthorized, "Invalid token")
+		// return responses.ErrorResponse(c, http.StatusUnauthorized, "Invalid token")
+		res := responses.Response{
+			Code:    http.StatusUnauthorized,
+			Message: "Invalid token",
+		}
+		return res.JSON(c)
 	}
 
 	// user := new(models.User)
 	user, err := queries.GetUserById(c.Request().Context(), claims["id"].(int64))
 
 	if err != nil {
-		return responses.ErrorResponse(c, http.StatusUnauthorized, "User not found")
+		// return responses.ErrorResponse(c, http.StatusUnauthorized, "User not found")
+		res := responses.Response{
+			Code:    http.StatusUnauthorized,
+			Message: "User not found",
+		}
+		return res.JSON(c)
 	}
 
 	tokenService := tokenservice.NewTokenService(authHandler.server.Config)
@@ -122,9 +163,14 @@ func (authHandler *AuthHandler) RefreshToken(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	res := responses.NewLoginResponse(accessToken, refreshToken, exp)
+	resBody := responses.NewLoginResponse(accessToken, refreshToken, exp)
 
-	return responses.Response(c, http.StatusOK, res)
+	res := responses.Response{
+		Code: http.StatusOK,
+		Data: resBody,
+	}
+
+	return res.JSON(c)
 }
 
 // Register
@@ -148,15 +194,23 @@ func (authHandler *AuthHandler) Register(c echo.Context) error {
 	if err := c.Bind(registerRequest); err != nil {
 		return err
 	}
-	// logger.Sugar().Infof("")
-	if err := registerRequest.Validate(); err != nil {
-		return responses.ErrorResponse(c, http.StatusBadRequest, "Required fields are empty or not valid")
+	if err := authHandler.server.Echo.Validator.Validate(registerRequest); err != nil {
+		// fmt.Errorf("error validating request: %v", err)
+		return responses.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Required fields are empty or not valid",
+		}.JSON(c)
+
 	}
 
 	_, err := queries.GetUserByEmail(c.Request().Context(), registerRequest.Email)
 
 	if err == nil {
-		return responses.ErrorResponse(c, http.StatusBadRequest, "User already exists")
+		res := responses.Response{
+			Code:    http.StatusBadRequest,
+			Message: "User already exists",
+		}
+		return res.JSON(c)
 	}
 
 	encryptedPassword, err := bcrypt.GenerateFromPassword(
@@ -180,8 +234,18 @@ func (authHandler *AuthHandler) Register(c echo.Context) error {
 	newUser, err := queries.CreateUser(c.Request().Context(), userParams)
 
 	if err != nil {
-		return responses.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+		res := responses.Response{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+		return res.JSON(c)
 	}
 
-	return responses.Response(c, http.StatusCreated, newUser)
+	res := responses.Response{
+		Code:    http.StatusCreated,
+		Data:    newUser,
+		Message: "User created successfully",
+	}
+
+	return res.JSON(c)
 }

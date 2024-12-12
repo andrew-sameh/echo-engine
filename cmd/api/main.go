@@ -7,7 +7,7 @@ import (
 	"github.com/andrew-sameh/echo-engine/internal/config"
 	"github.com/andrew-sameh/echo-engine/internal/server"
 	"github.com/andrew-sameh/echo-engine/internal/server/routes"
-	"go.uber.org/zap"
+	"github.com/andrew-sameh/echo-engine/pkg/logger"
 )
 
 //	@title			Echo Engine API
@@ -29,19 +29,20 @@ import (
 func main() {
 	cfg := config.New()
 
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	logger.InitWithOptions(logger.WithConfigLevel(cfg.LogLevel))
+	if logger.Log() != nil {
+		defer logger.Log().Sync()
+	}
 
 	server := server.NewServer(cfg)
 	routes.RegisterRoutes(server)
 
 	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
-	sugar.Infof("Service URL: http://localhost:%s/swagger/index.html", cfg.Server.Port)
+	logger.Log().Infof("Service URL: http://localhost:%s/swagger/index.html", cfg.Server.Port)
 
 	err := server.Start(cfg.Server.Port)
 
 	if err != nil {
-		sugar.Fatalf("Cannot start server: %s", err)
+		logger.Log().Fatalf("Cannot start server: %s", err)
 	}
 }

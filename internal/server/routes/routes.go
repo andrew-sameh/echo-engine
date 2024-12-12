@@ -7,22 +7,22 @@ import (
 	s "github.com/andrew-sameh/echo-engine/internal/server"
 	h "github.com/andrew-sameh/echo-engine/internal/server/handlers"
 	"github.com/andrew-sameh/echo-engine/internal/services/token"
+	"github.com/andrew-sameh/echo-engine/pkg/logger"
 	"github.com/brpaz/echozap"
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
-	"go.uber.org/zap"
 )
 
 func RegisterRoutes(s *s.Server) {
-	zapLogger, _ := zap.NewProduction()
-
 	// Server config
 	s.Echo.Server.ReadTimeout = 10 * time.Second
 	s.Echo.Server.WriteTimeout = 30 * time.Second
 	s.Echo.Server.IdleTimeout = time.Minute
+	s.Echo.Validator = s.Config.Server.Validator
+	s.Echo.Binder = s.Config.Server.Binder
 
 	// Handlers creation
 	genericHandler := h.NewGenericHandler(s)
@@ -31,8 +31,8 @@ func RegisterRoutes(s *s.Server) {
 
 	// Middlewares
 	s.Echo.Use(middleware.RequestID())
-	s.Echo.Use(echozap.ZapLogger(zapLogger))
-	s.Echo.Use(middleware.CORS())
+	s.Echo.Use(echozap.ZapLogger(logger.ZapLogger()))
+	s.Echo.Use(middleware.CORSWithConfig(s.Config.Server.CORSConfig))
 	s.Echo.Use(middleware.Recover())
 	// e.Use(middleware.Timeout())
 	// s.Echo.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
