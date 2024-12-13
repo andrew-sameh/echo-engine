@@ -2,17 +2,17 @@ package config
 
 import (
 	"log"
-	"os"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Auth     AuthConfig
-	DB       DBConfig
-	Server   ServerConfig
-	Redis    RedisConfig
-	LogLevel string
+	Auth   AuthConfig
+	DB     DBConfig
+	Server ServerConfig
+	Redis  RedisConfig
+	Logger LoggerConfig
+	// LogLevel string
 }
 
 func New() *Config {
@@ -22,10 +22,11 @@ func New() *Config {
 	}
 
 	return &Config{
-		Auth:     LoadAuthConfig(),
-		DB:       LoadDBConfig(),
-		Server:   LoadServerConfig(),
-		Redis:    LoadRedisConfig(),
-		LogLevel: os.Getenv("LOG_LEVEL"),
+		Auth:   LoadAuthConfig(),
+		DB:     LoadDBConfig(),
+		Server: LoadServerConfig(),
+		Redis:  LoadRedisConfig(),
+		Logger: LoadLoggerConfig(),
+		// LogLevel: os.Getenv("LOG_LEVEL"),
 	}
 }

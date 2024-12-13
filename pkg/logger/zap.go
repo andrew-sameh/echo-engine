@@ -1,155 +1,120 @@
 package logger
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
+	// "time"
+
+	"github.com/andrew-sameh/echo-engine/internal/config"
+	"github.com/andrew-sameh/echo-engine/pkg/file"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+// Zap SugaredLogger by default
+// DesugarZap performance-sensitive code
+type Logger struct {
+	Zap        *zap.SugaredLogger
+	DesugarZap *zap.Logger
+}
+
+// Logger singleton
 var (
-	log       Logger
-	zapLogger *zap.Logger
+	ZLogger Logger
 )
 
-type (
-	CallLogOption struct {
-		applyFunc func(*logConfigs)
+func NewLogger(config config.LoggerConfig) *Logger {
+	var options []zap.Option
+	var encoder zapcore.Encoder
+
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "ts",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		FunctionKey:    zapcore.OmitKey,
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.CapitalLevelEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
 	}
 
-	logConfigs struct {
-		Level zapcore.Level
-		// Encoding sets the logger's encoding. Valid values are "json" and "console"
-		Encoding string
+	if config.Format == "json" {
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
+	} else {
+		encoder = zapcore.NewConsoleEncoder(encoderConfig)
 	}
-	Logger interface {
-		Infof(template string, args ...interface{})
-		Infow(msg string, keysAndValues ...interface{})
-		Info(args ...interface{})
 
-		Debugf(template string, args ...interface{})
-		Debugw(msg string, keysAndValues ...interface{})
-		Debug(args ...interface{})
+	level := zap.NewAtomicLevelAt(toLevel(config.Level))
 
-		Warnf(template string, args ...interface{})
-		Warnw(msg string, keysAndValues ...interface{})
-		Warn(args ...interface{})
+	core := zapcore.NewCore(encoder, toWriter(config), level)
 
-		Errorf(template string, args ...interface{})
-		Errorw(msg string, keysAndValues ...interface{})
-		Error(args ...interface{})
+	stackLevel := zap.NewAtomicLevel()
+	stackLevel.SetLevel(zap.WarnLevel)
+	options = append(options,
+		zap.AddCaller(),
+		zap.AddCallerSkip(1),
+		zap.AddStacktrace(stackLevel),
+	)
 
-		Panicf(template string, args ...interface{})
-		Panicw(msg string, keysAndValues ...interface{})
-		Panic(args ...interface{})
-
-		Fatalf(template string, args ...interface{})
-		Fatalw(msg string, keysAndValues ...interface{})
-		Fatal(args ...interface{})
-
-		Sync() error
-	}
-)
-
-func init() {
-	var cfg = zap.NewDevelopmentConfig()
-	cfg.EncoderConfig = zap.NewProductionEncoderConfig()
-	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	cfg.Encoding = "json"
-	cfg.OutputPaths = []string{"stdout"}
-	logger, _ := cfg.Build()
-	log = logger.Sugar()
-	zapLogger = logger
+	logger := zap.New(core, options...)
+	ZLogger = Logger{Zap: logger.Sugar(), DesugarZap: logger}
+	return &ZLogger
 }
 
-// InitLog override default config
-func InitLog(env string) {
-	if env == "production" {
-		var cfg = zap.NewProductionConfig()
-		cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-		cfg.Encoding = "json"
-		cfg.OutputPaths = []string{"stdout"}
-		cfg.Level.SetLevel(zap.WarnLevel)
-		logger, _ := cfg.Build()
-		log = logger.Sugar()
-		zapLogger = logger
-	}
-}
+// func localTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+// 	enc.AppendString(t.Format(constants.TimeFormat))
+// }
 
-func Log() Logger {
-	return log
-}
-
-func ZapLogger() *zap.Logger {
-
-	return zapLogger
-}
-
-func Set(newLog Logger) {
-	log = newLog
-}
-
-func WithConfigLevel(level string) CallLogOption {
-	return CallLogOption{
-		applyFunc: func(oio *logConfigs) {
-			switch strings.ToLower(level) {
-			case "debug":
-				oio.Level = zapcore.DebugLevel
-			case "info":
-				oio.Level = zapcore.InfoLevel
-			case "warn":
-				oio.Level = zapcore.WarnLevel
-			case "error":
-				oio.Level = zapcore.ErrorLevel
-			case "fatal":
-				oio.Level = zapcore.FatalLevel
-			}
-		},
+func toLevel(level string) zapcore.Level {
+	switch strings.ToLower(level) {
+	case "debug":
+		return zap.DebugLevel
+	case "info":
+		return zap.InfoLevel
+	case "warn":
+		return zap.WarnLevel
+	case "error":
+		return zap.ErrorLevel
+	case "dpanic":
+		return zap.DPanicLevel
+	case "panic":
+		return zap.PanicLevel
+	case "fatal":
+		return zap.FatalLevel
+	default:
+		return zap.InfoLevel
 	}
 }
 
-func WithConfigEncoding(encoding string) CallLogOption {
-	return CallLogOption{
-		applyFunc: func(oio *logConfigs) {
-			oio.Encoding = strings.ToLower(encoding)
-		},
-	}
-}
+func toWriter(config config.LoggerConfig) zapcore.WriteSyncer {
+	fp := ""
+	sp := string(filepath.Separator)
 
-func InitWithOptions(cnf ...CallLogOption) {
-	var cfg = zap.NewDevelopmentConfig()
-	cfg.EncoderConfig = zap.NewProductionEncoderConfig()
-	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	cfg.OutputPaths = []string{"stdout"}
-	cfg.Encoding = "json"
+	fp, _ = filepath.Abs(filepath.Dir(filepath.Join(".")))
+	fp += sp + "logs" + sp
 
-	c := &logConfigs{}
-	if len(cnf) > 0 {
-		c = applyLogConfig(cnf)
+	if config.Directory != "" {
+		if err := file.EnsureDirRW(config.Directory); err != nil {
+			fp = config.Directory
+		}
 	}
 
-	if c.Encoding != "" {
-		cfg.Encoding = c.Encoding
-	}
-
-	if c.Level >= -1 {
-		cfg.Level.SetLevel(zap.DebugLevel)
-	}
-
-	logger, _ := cfg.Build()
-
-	log = logger.Sugar()
-	zapLogger = logger
-}
-
-func applyLogConfig(callOptions []CallLogOption) *logConfigs {
-	if len(callOptions) == 0 {
-		return &logConfigs{}
-	}
-
-	optCopy := &logConfigs{}
-	for _, f := range callOptions {
-		f.applyFunc(optCopy)
-	}
-	return optCopy
+	return zapcore.NewMultiWriteSyncer(
+		zapcore.AddSync(os.Stdout),
+		zapcore.AddSync(&lumberjack.Logger{ // 文件切割
+			Filename:   filepath.Join(fp, config.Name) + ".log",
+			MaxSize:    100,
+			MaxAge:     0,
+			MaxBackups: 0,
+			LocalTime:  true,
+			Compress:   true,
+		}),
+	)
 }

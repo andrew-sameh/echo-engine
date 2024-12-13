@@ -31,10 +31,10 @@ func NewRedis(cfg *config.Config) Redis {
 	defer cancel()
 
 	if _, err := client.Ping(ctx).Result(); err != nil {
-		logger.Log().Fatalf("Error to open redis[%s] connection: %v", addr, err)
+		logger.ZLogger.Zap.Fatalf("Error to open redis[%s] connection: %v", addr, err)
 	}
 
-	logger.Log().Info("Redis connection established")
+	logger.ZLogger.Zap.Info("Redis connection established")
 	return Redis{
 		client: client,
 		prefix: cfg.Redis.KeyPrefix,

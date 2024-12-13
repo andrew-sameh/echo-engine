@@ -7,7 +7,6 @@ import (
 	s "github.com/andrew-sameh/echo-engine/internal/server"
 	h "github.com/andrew-sameh/echo-engine/internal/server/handlers"
 	"github.com/andrew-sameh/echo-engine/internal/services/token"
-	"github.com/andrew-sameh/echo-engine/pkg/logger"
 	"github.com/brpaz/echozap"
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -31,7 +30,7 @@ func RegisterRoutes(s *s.Server) {
 
 	// Middlewares
 	s.Echo.Use(middleware.RequestID())
-	s.Echo.Use(echozap.ZapLogger(logger.ZapLogger()))
+	s.Echo.Use(echozap.ZapLogger(s.Logger.DesugarZap))
 	s.Echo.Use(middleware.CORSWithConfig(s.Config.Server.CORSConfig))
 	s.Echo.Use(middleware.Recover())
 	// e.Use(middleware.Timeout())

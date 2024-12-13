@@ -10,7 +10,6 @@ import (
 	s "github.com/andrew-sameh/echo-engine/internal/server"
 	tokenservice "github.com/andrew-sameh/echo-engine/internal/services/token"
 	"github.com/andrew-sameh/echo-engine/internal/utils"
-	"github.com/andrew-sameh/echo-engine/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 
@@ -39,6 +38,7 @@ func NewAuthHandler(server *s.Server) *AuthHandler {
 //	@Failure		401		{object}	responses.Error
 //	@Router			/auth/login [post]
 func (authHandler *AuthHandler) Login(c echo.Context) error {
+	logger := authHandler.server.Logger.Zap
 	queries := authHandler.server.DB.Queries()
 
 	loginRequest := new(requests.LoginRequest)
@@ -48,7 +48,7 @@ func (authHandler *AuthHandler) Login(c echo.Context) error {
 	}
 
 	if err := authHandler.server.Echo.Validator.Validate(loginRequest); err != nil {
-		logger.Log().Error("error validating request: %v", err, c.Response().Header().Get(echo.HeaderXRequestID))
+		logger.Error("error validating request: %v", err, c.Response().Header().Get(echo.HeaderXRequestID))
 		res := responses.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Required fields are empty or not valid",
