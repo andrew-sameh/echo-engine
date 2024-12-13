@@ -31,3 +31,4 @@ tmp/
 main
 *templ.go
 .env
+logs/

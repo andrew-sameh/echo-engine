@@ -38,17 +38,18 @@ func NewAuthHandler(server *s.Server) *AuthHandler {
 //	@Failure		401		{object}	responses.Error
 //	@Router			/auth/login [post]
 func (authHandler *AuthHandler) Login(c echo.Context) error {
-	logger := authHandler.server.Logger.Zap
+	logger := authHandler.server.Logger
 	queries := authHandler.server.DB.Queries()
 
 	loginRequest := new(requests.LoginRequest)
 
+	logger.LogWithFields("User is trying to login", c.Response().Header().Get(echo.HeaderXRequestID), "auth")
 	if err := c.Bind(loginRequest); err != nil {
 		return err
 	}
 
 	if err := authHandler.server.Echo.Validator.Validate(loginRequest); err != nil {
-		logger.Error("error validating request: %v", err, c.Response().Header().Get(echo.HeaderXRequestID))
+		logger.Zap.Error("error validating request: %v", err, c.Response().Header().Get(echo.HeaderXRequestID))
 		res := responses.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Required fields are empty or not valid",

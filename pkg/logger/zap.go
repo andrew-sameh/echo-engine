@@ -4,8 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	// "time"
+	"time"
 
 	"github.com/andrew-sameh/echo-engine/internal/config"
 	"github.com/andrew-sameh/echo-engine/pkg/file"
@@ -26,6 +25,9 @@ var (
 	ZLogger Logger
 )
 
+func (l *Logger) LogWithFields(msg string, requestID string, serviceName string) {
+	l.Zap.With(zap.String("request_id", requestID), zap.String("service_name", serviceName)).Info(msg)
+}
 func NewLogger(config config.LoggerConfig) *Logger {
 	var options []zap.Option
 	var encoder zapcore.Encoder
@@ -42,7 +44,7 @@ func NewLogger(config config.LoggerConfig) *Logger {
 		EncodeLevel:    zapcore.CapitalLevelEncoder,
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeTime:     prodTimeEncoder,
 	}
 
 	if config.Format == "json" {
@@ -68,9 +70,13 @@ func NewLogger(config config.LoggerConfig) *Logger {
 	return &ZLogger
 }
 
-// func localTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-// 	enc.AppendString(t.Format(constants.TimeFormat))
-// }
+func localTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	enc.AppendString(t.Format(time.Stamp))
+}
+func prodTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05Z0700"))
+	// enc.AppendString(t.Format(constants.TimeFormat))
+}
 
 func toLevel(level string) zapcore.Level {
 	switch strings.ToLower(level) {
@@ -105,16 +111,23 @@ func toWriter(config config.LoggerConfig) zapcore.WriteSyncer {
 			fp = config.Directory
 		}
 	}
+	// Create a slice of WriteSyncer
+	var writers []zapcore.WriteSyncer
 
-	return zapcore.NewMultiWriteSyncer(
-		zapcore.AddSync(os.Stdout),
-		zapcore.AddSync(&lumberjack.Logger{ // 文件切割
+	// Always add os.Stdout to writers
+	writers = append(writers, zapcore.AddSync(os.Stdout))
+
+	// Only add local file logging if config.Local is true
+	if config.Local {
+		writers = append(writers, zapcore.AddSync(&lumberjack.Logger{ // 文件切割
 			Filename:   filepath.Join(fp, config.Name) + ".log",
 			MaxSize:    100,
 			MaxAge:     0,
 			MaxBackups: 0,
-			LocalTime:  true,
+			LocalTime:  false,
 			Compress:   true,
-		}),
-	)
+		}))
+	}
+
+	return zapcore.NewMultiWriteSyncer(writers...)
 }
